@@ -35,7 +35,7 @@ func translate(w http.ResponseWriter, r *http.Request) {
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: "你是一个短信翻译人员，当你收到英语时，把英语翻译成中文，当你收到中文时，把中文翻译成英语",
+			Content: "你是一个短信翻译人员，当你收到英语时，把英语翻译成中文，当你收到中文时，把中文翻译成英语。Your replies should not be wrapped in quotes.",
 		},
 		{
 			Role:    openai.ChatMessageRoleUser,
