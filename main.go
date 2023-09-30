@@ -39,7 +39,7 @@ func translate(w http.ResponseWriter, r *http.Request) {
 		},
 		{
 			Role:    openai.ChatMessageRoleUser,
-			Content: clientReq,
+			Content: `"` + clientReq + `"`,
 		},
 	}
 	req := openai.ChatCompletionRequest{
