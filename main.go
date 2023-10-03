@@ -113,7 +113,7 @@ func writing(w http.ResponseWriter, r *http.Request) {
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: "Improve the writing, make it sounds more natural and friendly",
+			Content: "Improve the writing, make it sounds more natural and friendly, your replies should not be wrapped in quotes",
 		},
 		{
 			Role:    openai.ChatMessageRoleUser,
