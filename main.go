@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,58 +26,55 @@ func main() {
 func translate(w http.ResponseWriter, r *http.Request) {
 	// request from apple Shortcuts
 	clientReq := r.FormValue("input")
-	fmt.Println(clientReq)
+	log.Println(clientReq)
 	// clientReq, err := io.ReadAll(r.Body)
 	// if err != nil {
 	// 	fmt.Println(err)
 	// 	w.WriteHeader(400) // 400 means a problem with client
 	// 	w.Write([]byte(err.Error()))
 	// }
+	prompt := "你是一个短信翻译人员，当你收到英语时，把英语翻译成中文，当你收到中文时，把中文翻译成英语。Your replies should not be wrapped in quotes."
 
-	client := openai.NewClient(os.Getenv("OPENAI_API_KEY")) // make a instance of client
-
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: "你是一个短信翻译人员，当你收到英语时，把英语翻译成中文，当你收到中文时，把中文翻译成英语。Your replies should not be wrapped in quotes.",
-		},
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: `"` + clientReq + `"`,
-		},
-	}
-	req := openai.ChatCompletionRequest{
-		Model:       openai.GPT3Dot5Turbo,
-		Messages:    messages,
-		MaxTokens:   256, // the maximum length of the response
-		Temperature: 1,   // how imaginative
-	}
-
-	resp, err := client.CreateChatCompletion(r.Context(), req)
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
 	if err != nil {
-		fmt.Print(err)
-		return
+		sendErrorResponse(err, w)
 	}
-
-	// send respond back to Client
-	w.WriteHeader(200)
-	_, err = w.Write([]byte(resp.Choices[0].Message.Content))
-
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
+	sendResponse(resp, w)
 }
 
 func grammar(w http.ResponseWriter, r *http.Request) {
 	clientReq := r.FormValue("input")
 	fmt.Println(clientReq)
 
-	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+	prompt := "Improve and fix the text grammar I provided to you, your replies should not be wrapped in quotes"
+
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
+	if err != nil {
+		sendErrorResponse(err, w)
+		return
+	}
+	sendResponse(resp, w)
+}
+
+func writing(w http.ResponseWriter, r *http.Request) {
+	clientReq := r.FormValue("input")
+	fmt.Println(clientReq)
+
+	prompt := "Improve the writing, make it sounds more natural and friendly, your replies should not be wrapped in quotes"
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
+	if err != nil {
+		sendErrorResponse(err, w)
+	}
+	sendResponse(resp, w)
+}
+
+func callOpenAI(ctx context.Context, prompt string, clientReq string) (openai.ChatCompletionResponse, error) {
+	client := openai.NewClient(os.Getenv("OPENAI_API_KEY")) // make a instance of client
+
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem, // System is instruction
-			Content: "Improve and fix the text grammar I provided to you, your replies should not be wrapped in quotes",
+			Content: prompt,
 		},
 		{
 			Role:    openai.ChatMessageRoleUser, // User is what you want send to chatgpt
@@ -87,57 +85,32 @@ func grammar(w http.ResponseWriter, r *http.Request) {
 	req := openai.ChatCompletionRequest{
 		Model:       openai.GPT3Dot5Turbo,
 		Messages:    messages,
-		MaxTokens:   256,
-		Temperature: 1,
+		MaxTokens:   256, // the maximum length of the response
+		Temperature: 1,   // how imaginative
 	}
 
-	resp, err := client.CreateChatCompletion(r.Context(), req)
+	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		fmt.Println(err)
-		return
 	}
+	return resp, nil
+}
 
+func sendResponse(resp openai.ChatCompletionResponse, w http.ResponseWriter) {
+	// send respond back to Client
 	w.WriteHeader(200)
-	_, err = w.Write([]byte(resp.Choices[0].Message.Content))
+	_, err := w.Write([]byte(resp.Choices[0].Message.Content))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 }
 
-func writing(w http.ResponseWriter, r *http.Request) {
-	clientReq := r.FormValue("input")
-	fmt.Println(clientReq)
-
-	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: "Improve the writing, make it sounds more natural and friendly, your replies should not be wrapped in quotes",
-		},
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: `"` + clientReq + `"`,
-		},
-	}
-
-	req := openai.ChatCompletionRequest{
-		Model:       openai.GPT3Dot5Turbo,
-		Messages:    messages,
-		MaxTokens:   256,
-		Temperature: 1,
-	}
-
-	resp, err := client.CreateChatCompletion(r.Context(), req)
+func sendErrorResponse(errIn error, w http.ResponseWriter) {
+	w.WriteHeader(500)
+	_, err := w.Write([]byte(errIn.Error()))
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	w.WriteHeader(200)
-	_, err = w.Write([]byte(resp.Choices[0].Message.Content))
-	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 }
