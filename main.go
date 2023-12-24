@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,10 @@ func main() {
 }
 
 func translate(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
+
 	// request from apple Shortcuts
 	clientReq := r.FormValue("input")
 	log.Println(clientReq)
@@ -43,6 +48,9 @@ func translate(w http.ResponseWriter, r *http.Request) {
 }
 
 func grammar(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
 	clientReq := r.FormValue("input")
 	fmt.Println(clientReq)
 
@@ -57,6 +65,9 @@ func grammar(w http.ResponseWriter, r *http.Request) {
 }
 
 func writing(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
 	clientReq := r.FormValue("input")
 	fmt.Println(clientReq)
 
@@ -91,7 +102,7 @@ func callOpenAI(ctx context.Context, prompt string, clientReq string) (openai.Ch
 
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return resp, nil
 }
@@ -101,7 +112,7 @@ func sendResponse(resp openai.ChatCompletionResponse, w http.ResponseWriter) {
 	w.WriteHeader(200)
 	_, err := w.Write([]byte(resp.Choices[0].Message.Content))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 }
@@ -113,4 +124,13 @@ func sendErrorResponse(errIn error, w http.ResponseWriter) {
 		log.Println(err)
 		return
 	}
+}
+
+func authorized(w http.ResponseWriter, r *http.Request) bool {
+	apikey := r.Header.Get("Authorization")
+	if apikey != "Bearer "+os.Getenv("TRANSLATE_API_KEY") {
+		sendErrorResponse(errors.New("unauthorised"), w)
+		return false
+	}
+	return true
 }
