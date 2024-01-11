@@ -127,7 +127,9 @@ func sendErrorResponse(errIn error, w http.ResponseWriter) {
 }
 
 func authorized(w http.ResponseWriter, r *http.Request) bool {
+
 	apikey := r.Header.Get("Authorization")
+
 	if apikey != "Bearer "+os.Getenv("TRANSLATE_API_KEY") {
 		sendErrorResponse(errors.New("unauthorised"), w)
 		return false
