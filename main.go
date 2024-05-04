@@ -21,6 +21,9 @@ func main() {
 	http.HandleFunc("/translate", translate)
 	http.HandleFunc("/writing", writing)
 	http.HandleFunc("/grammar", grammar)
+	http.HandleFunc("/reply", reply)
+	http.HandleFunc("/summary", summary)
+	http.HandleFunc("/summary-mandarin", summaryMandarin)
 	http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 }
 
@@ -72,6 +75,51 @@ func writing(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(clientReq)
 
 	prompt := "Improve the writing, make it sounds more natural and friendly, your replies should not be wrapped in quotes"
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
+	if err != nil {
+		sendErrorResponse(err, w)
+	}
+	sendResponse(resp, w)
+}
+
+func reply(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
+	clientReq := r.FormValue("input")
+	fmt.Println(clientReq)
+
+	prompt := "You are a chatbot, reply to the user's message, your replies should not be wrapped in quotes"
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
+	if err != nil {
+		sendErrorResponse(err, w)
+	}
+	sendResponse(resp, w)
+}
+
+func summary(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
+	clientReq := r.FormValue("input")
+	fmt.Println(clientReq)
+
+	prompt := "Summarize the text I provided to you, your replies should not be wrapped in quotes"
+	resp, err := callOpenAI(r.Context(), prompt, clientReq)
+	if err != nil {
+		sendErrorResponse(err, w)
+	}
+	sendResponse(resp, w)
+}
+
+func summaryMandarin(w http.ResponseWriter, r *http.Request) {
+	if !authorized(w, r) {
+		return
+	}
+	clientReq := r.FormValue("input")
+	fmt.Println(clientReq)
+
+	prompt := "Summarize the text I provided to you in Mandarin, your replies should not be wrapped in quotes"
 	resp, err := callOpenAI(r.Context(), prompt, clientReq)
 	if err != nil {
 		sendErrorResponse(err, w)
