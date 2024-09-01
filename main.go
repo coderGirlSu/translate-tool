@@ -158,10 +158,12 @@ func callOpenAI(ctx context.Context, prompt string, clientReq string) (openai.Ch
 func sendResponse(resp openai.ChatCompletionResponse, w http.ResponseWriter) {
 	// send respond back to Client
 	w.WriteHeader(200)
-	_, err := w.Write([]byte(resp.Choices[0].Message.Content))
-	if err != nil {
-		log.Println(err)
-		return
+	if len(resp.Choices) > 0 {
+		_, err := w.Write([]byte(resp.Choices[0].Message.Content))
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
 
